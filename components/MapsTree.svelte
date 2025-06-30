@@ -11,7 +11,8 @@
             name: title,
             filter: [],
             children: [],
-            input_name: name
+            input_name: name,
+            columns: columns
         };
         treeData.forEach(d => {
             var leaf = tree;
@@ -28,7 +29,8 @@
                         name: key,
                         filter: leaf.filter.concat([f]),
                         children: [],
-                        input_name: name
+                        input_name: name,
+                        columns: columns
                     };
                     leaf.children.push(newnode);
                     leaf = newnode;

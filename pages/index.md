@@ -25,8 +25,8 @@ title: Maps Tree Component Demo
       date_part('month', order_datetime) as month,
       sum(sales) as sales_usd
   from needful_things.orders
-  where category like coalesce('${inputs.tree.category}','0')
-  and date_part('year', order_datetime) like coalesce('${inputs.tree.year}','0')
+  where category like coalesce('${inputs.tree.category}','%')
+  and date_part('year', order_datetime) like coalesce('${inputs.tree.year}','%')
   group by all
   order by sales_usd desc
 ```

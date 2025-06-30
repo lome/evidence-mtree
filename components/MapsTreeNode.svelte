@@ -4,6 +4,7 @@
 	export let children = [];
 	export let filter = null;
 	export let input_name = null;
+	export let columns = [];
 	const inputs = getInputContext();
 	
 	let open = false;
@@ -21,13 +22,17 @@
 				});
 			});
 			selected = s;
-			console.log(selected);
 		}
+	}
+
+	if (filter.length == 0){
+		// Open root
+		toggleOpen();
 	}
 	
 	function toggleOpen() {
 		open = !open;
-		if (children.length == 0){
+		if (filter){
 			let value = {};
 			filter.forEach(f => {
 				Object.keys(f).forEach(k => {
@@ -35,8 +40,13 @@
 					//console.log(k,'=>',f[k]);
 				});
 			});
+			columns.forEach(c => {
+				if (!value[c]){
+					value[c] = '%';
+				}
+			});
 			$inputs[input_name] = value;
-			//console.log(input_name,$inputs);
+			console.log(input_name,value);
 		}
 	}
 </script>
