@@ -1,54 +1,76 @@
 <script>
-	import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
 	export let name = "";
 	export let children = [];
 	export let filter = null;
-	export let input_name = null;
-	export let columns = [];
-	const inputs = getInputContext();
+	export let addFilter;
+	export let removeFilter;
+	export let markSelected;
 	
 	let open = false;
 	let selected = false;
+	let selectedChildren = {};
+	let hasChildSelected = false;
 
 	$: selected
+	
 	$: {
-		if (filter){
-			let s = true;
-			filter.forEach(f => {
-				Object.keys(f).forEach(k => {
-					if ($inputs[input_name] && $inputs[input_name][k]){
-						s = s && $inputs[input_name][k] == f[k];
-					}
-				});
+		// Add invoke function to children
+		if (children){
+			children.forEach(child => {
+				child.markSelected = markChildSelected;
 			});
-			selected = s;
 		}
 	}
 
-	if (filter.length == 0){
-		// Open root
-		toggleOpen();
-	}
-	
-	function toggleOpen() {
-		open = !open;
-		if (filter){
-			let value = {};
-			filter.forEach(f => {
-				Object.keys(f).forEach(k => {
-					value[k] = f[k];
-					//console.log(k,'=>',f[k]);
-				});
-			});
-			columns.forEach(c => {
-				if (!value[c]){
-					value[c] = '%';
-				}
-			});
-			$inputs[input_name] = value;
-			console.log(input_name,value);
+	function markChildSelected(_selected, key){
+		if (_selected) selectedChildren[key] = true;
+		else selectedChildren[key] = false;
+		hasChildSelected = Object.keys(selectedChildren)
+			.filter(k => selectedChildren[k] == true).length > 0;
+		if (hasChildSelected){
+			selected = false;
+			refreshData();
 		}
 	}
+
+	function toggleOpen() {
+		open = hasChildSelected || !open;
+	}
+
+	function toggleSelected() {
+		// Main node, break
+		if (Object.keys(filter).length == 0) return;
+
+		selected = !selected;
+		if (markSelected){
+			markSelected(selected, ''+filter._key);
+		}
+		refreshData();
+	}
+
+	function refreshData(){
+		if (selected){
+			console.log('Selected',  filter);
+			addFilter(filter);
+			children.forEach(child => {
+				const event = new CustomEvent('maps_treenode_child_clear', 
+					{ detail: { 'key':child.filter._key } });
+    			document.dispatchEvent(event);
+			})
+		} else {
+			console.log('UnSelected', filter);
+			removeFilter(filter);
+		}
+	}
+
+	document.addEventListener('maps_treenode_child_clear', (e) => {
+        if (filter && filter._key && e.detail.key == filter._key){
+			//Clear node
+			selected = false;
+			removeFilter(filter);
+		}
+    });
+
 </script>
 
 <div class="tree mb-0 mt-0">
@@ -65,8 +87,8 @@
 		<button class="expand-button mr-2 text-sm text-base-content cursor-pointer inline-flex gap-2">&nbsp</button>
 	{/if}
     <span class="node-label text-sm text-base-content cursor-pointer inline-flex gap-2 
-	{selected ? ( children.length ? 'font-semibold' : 'font-bold' ) : ''}" 
-		on:click={toggleOpen}>{name}</span>
+	{(selected) ? 'font-bold' : ''}" 
+		on:click={toggleSelected}>{name}</span>
 	{#if open}
     <div class="children ml-4">
       {#each children as child}
