@@ -16,7 +16,7 @@
     }
 
     function refreshData(){
-        console.log('Refresh Data!', filters);
+        //console.log('Refresh Data!', filters);
         let qdata = {};
         filters.forEach(f => {
             columns.forEach(c => {
@@ -35,7 +35,7 @@
             qdata[k] = duckdbSerialize(qdata[k] ? qdata[k] : []);
         });
         // Fill Up wih all Data where needed
-        console.log("Query values",qdata,allData);
+        //console.log("Query values",qdata,allData);
         $inputs[name] = qdata;
     }
 

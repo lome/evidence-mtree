@@ -1,10 +1,15 @@
 <script>
+	import { writable } from 'svelte/store';
+	import { onMount } from 'svelte';
+	export const clear = writable(false);
+
 	export let name = "";
 	export let children = [];
 	export let filter = null;
 	export let addFilter;
 	export let removeFilter;
 	export let markSelected;
+	export let clearWritable;
 	
 	let open = false;
 	let selected = false;
@@ -18,9 +23,21 @@
 		if (children){
 			children.forEach(child => {
 				child.markSelected = markChildSelected;
+				child.clearWritable = clear;
 			});
 		}
 	}
+
+	onMount(() => {
+		if (clearWritable) {
+			clearWritable.subscribe(value => {
+				console.log('Cleared!',value);
+				//Clear node
+				selected = false;
+				removeFilter(filter);
+			});
+		}
+   });
 
 	function markChildSelected(_selected, key){
 		if (_selected) selectedChildren[key] = true;
@@ -50,26 +67,14 @@
 
 	function refreshData(){
 		if (selected){
-			console.log('Selected',  filter);
+			//console.log('Selected',  filter);
 			addFilter(filter);
-			children.forEach(child => {
-				const event = new CustomEvent('maps_treenode_child_clear', 
-					{ detail: { 'key':child.filter._key } });
-    			document.dispatchEvent(event);
-			})
+			clear.set(Date.now());
 		} else {
-			console.log('UnSelected', filter);
+			//console.log('UnSelected', filter);
 			removeFilter(filter);
 		}
 	}
-
-	document.addEventListener('maps_treenode_child_clear', (e) => {
-        if (filter && filter._key && e.detail.key == filter._key){
-			//Clear node
-			selected = false;
-			removeFilter(filter);
-		}
-    });
 
 </script>
 
