@@ -25,8 +25,7 @@ title: Maps Tree Component Demo
       date_part('month', order_datetime) as month,
       sum(sales) as sales_usd
   from needful_things.orders
-  where category = any(array${inputs.tree.category})
-  and date_part('year', order_datetime) = any(array${inputs.tree.year})
+  where ${inputs.tree}
   group by all
   order by sales_usd desc
 ```

@@ -17,26 +17,21 @@
 
     function refreshData(){
         //console.log('Refresh Data!', filters);
-        let qdata = {};
+        let conditions = [];
         filters.forEach(f => {
-            columns.forEach(c => {
-                if (f[c]){
-                    if (!qdata[c]) qdata[c] = [];
-                    qdata[c].push(f[c]);
+            let inq = [];
+            columns.forEach(col => {
+                if (f[col]){
+                    inq.push(col+' = '+duckdbSerialize(f[col])+' ');
                 }
-            });
+            })
+            conditions.push('('+inq.join(' and ')+')');
         });
-        columns.forEach(c => {
-            if (!qdata[c]){
-                qdata[c] = allData[c];
-            }
-        });
-        Object.keys(qdata).forEach(k => {
-            qdata[k] = duckdbSerialize(qdata[k] ? qdata[k] : []);
-        });
-        // Fill Up wih all Data where needed
-        //console.log("Query values",qdata,allData);
-        $inputs[name] = qdata;
+        $inputs[name] = 
+            conditions.length ? 
+            conditions.join(' or ')
+            : '1=1';
+        //console.log($inputs[name])
     }
 
     function addFilter(fin){

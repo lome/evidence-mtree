@@ -1,7 +1,7 @@
 <script>
 	import { writable } from 'svelte/store';
 	import { onMount } from 'svelte';
-	export const clear = writable(false);
+	export const clearChildren = writable(false);
 
 	export let name = "";
 	export let children = [];
@@ -9,12 +9,11 @@
 	export let addFilter;
 	export let removeFilter;
 	export let markSelected;
-	export let clearWritable;
+	export let parentSelected;
 	
 	let open = false;
 	let selected = false;
 	let selectedChildren = {};
-	let hasChildSelected = false;
 
 	$: selected
 	
@@ -23,45 +22,43 @@
 		if (children){
 			children.forEach(child => {
 				child.markSelected = markChildSelected;
-				child.clearWritable = clear;
+				child.parentSelected = clearChildren;
 			});
 		}
 	}
 
 	onMount(() => {
-		if (clearWritable) {
-			clearWritable.subscribe(value => {
-				console.log('Cleared!',value);
+		if (parentSelected) {
+			parentSelected.subscribe(value => {
 				//Clear node
 				selected = false;
-				removeFilter(filter);
+				refreshData();
 			});
 		}
    });
 
 	function markChildSelected(_selected, key){
-		if (_selected) selectedChildren[key] = true;
-		else selectedChildren[key] = false;
-		hasChildSelected = Object.keys(selectedChildren)
-			.filter(k => selectedChildren[k] == true).length > 0;
-		if (hasChildSelected){
+		selectedChildren[key] = _selected;
+		if (selected && hasChildSelected()){
 			selected = false;
 			refreshData();
 		}
 	}
 
+	function hasChildSelected(){
+		return Object.values(selectedChildren)
+			.filter(k => k == true).length > 0;
+	}
+
 	function toggleOpen() {
-		open = hasChildSelected || !open;
+		//console.log('children',selectedChildren);
+		open = hasChildSelected() || !open;
 	}
 
 	function toggleSelected() {
 		// Main node, break
 		if (Object.keys(filter).length == 0) return;
-
 		selected = !selected;
-		if (markSelected){
-			markSelected(selected, ''+filter._key);
-		}
 		refreshData();
 	}
 
@@ -69,10 +66,16 @@
 		if (selected){
 			//console.log('Selected',  filter);
 			addFilter(filter);
-			clear.set(Date.now());
+			clearChildren.set(Date.now());
+			if (markSelected){
+				markSelected(selected, ''+filter._key);
+			}
 		} else {
 			//console.log('UnSelected', filter);
 			removeFilter(filter);
+			if (markSelected){
+				markSelected(selected, ''+filter._key);
+			}
 		}
 	}
 
