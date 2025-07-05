@@ -6,8 +6,6 @@
     export let treeData, columns, title, name;
     export let filters = []
 
-    let allData = {};
-
     const inputs = getInputContext();
 
     $: tree = buildTree(treeData,columns);
@@ -66,13 +64,6 @@
             var leaf = tree;
             columns.forEach(l => {
                 var key = ''+d[l];
-                if (allData[l]){
-                    if (allData[l].filter(v => v == key).length == 0){
-                        allData[l].push(key);
-                    }
-                } else {
-                    allData[l] = [key];
-                }
                 var match = leaf.children.filter(n => {
                     return n.name == key;
                 });
