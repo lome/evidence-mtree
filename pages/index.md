@@ -38,6 +38,6 @@ title: Maps Tree Component Demo
 </Grid>
 
 
-<PivotTable data={orders_by_tree} columns={['category','year']} rows={['quarter','month']} metric={'sales_usd'}>
+<PivotTable data={orders_by_tree} columns={['category','year']} rows={['quarter','month']} metric={'sales_usd'} aggregation='sum'>
 </PivotTable>
 
