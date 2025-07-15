@@ -271,7 +271,7 @@
                         <th colspan={rows.length} rowspan={columns.length}></th>
                     {/if}
                     {#each headerRow as cell}
-                        {#if cell.span > 0 && cell.value !== ''}
+                        {#if cell.span > 0}
                             <th colspan={cell.span} class:total={cell.isTotal}>{cell.value}</th>
                         {/if}
                     {/each}
