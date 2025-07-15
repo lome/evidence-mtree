@@ -132,8 +132,6 @@
         })
 
         collapsedRowPaths = collapsedRowPaths;
-        console.log(collapsedRowPaths);
-
         return { colHeaders, rowHeaders, body, sortedRowPaths, sortedColPaths };
     }
 
