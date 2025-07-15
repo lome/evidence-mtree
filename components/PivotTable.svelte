@@ -10,6 +10,18 @@
 
     const TOTAL_KEY = '__TOTAL__';
 
+    $: collapsedRowPaths = new Set();
+
+    function toggleRow(path) {
+        const pathKey = JSON.stringify(path);
+        if (collapsedRowPaths.has(pathKey)) {
+            collapsedRowPaths.delete(pathKey);
+        } else {
+            collapsedRowPaths.add(pathKey);
+        }
+        collapsedRowPaths = collapsedRowPaths;
+    }
+
     function arrayCompare(a, b) {
         for (let i = 0; i < Math.min(a.length, b.length); i++) {
             if (a[i] === TOTAL_KEY && b[i] !== TOTAL_KEY) return 1;
@@ -21,6 +33,29 @@
     }
 
     $: table = buildTable(data, columns, rows, metric, aggregation, showRowTotals, showColTotals);
+
+    $: visibleRowIndices = table.sortedRowPaths
+        .map((_, i) => i)
+        .filter(i => {
+            const path = table.sortedRowPaths[i];
+            // A row is visible if none of its parent paths are collapsed.
+            for (let j = 1; j < path.length; j++) {
+                const parentPath = path.slice(0, j);
+                if (collapsedRowPaths.has(JSON.stringify(parentPath))) {
+                    // This row is a child of a collapsed path.
+                    // It should be hidden, unless it is the total row for that collapsed path
+                    const isTotalRowForParent = path.slice(j).every(p => p === TOTAL_KEY);
+                    if (!isTotalRowForParent) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+    
+    $: visiblePaths = table.sortedRowPaths.filter((_, i) => visibleRowIndices.includes(i));
+    $: visibleBody = table.body.filter((_, i) => visibleRowIndices.includes(i));
+    $: visibleRowHeaders = buildRowHeaders(visiblePaths, rows.length);
 
     function getPathsToUpdate(path, withTotals) {
         if (!withTotals) return [path];
@@ -89,6 +124,16 @@
         const colHeaders = buildColHeaders(sortedColPaths, columns.length);
         const rowHeaders = buildRowHeaders(sortedRowPaths, rows.length);
 
+        sortedRowPaths.forEach(rp => {
+            for (let j=0; j < rp.length; j++){
+                let v = JSON.stringify(rp.slice(0,j));
+                collapsedRowPaths.add(v);
+            }
+        })
+
+        collapsedRowPaths = collapsedRowPaths;
+        console.log(collapsedRowPaths);
+
         return { colHeaders, rowHeaders, body, sortedRowPaths, sortedColPaths };
     }
 
@@ -112,9 +157,9 @@
                 if (isTotal) {
                     const isGrandTotal = currentPath.every(p => p === TOTAL_KEY);
                     if (isGrandTotal) {
-                        value = level === 0 ? 'Grand Total' : '';
+                        value = level === 0 ? '' : '';
                     } else {
-                        value = 'Total';
+                        value = '';
                     }
                 }
                 headers[level].push({ value, span, isTotal });
@@ -144,13 +189,16 @@
                 if (isTotal) {
                     const isGrandTotal = currentPath.every(p => p === TOTAL_KEY);
                     if (isGrandTotal) {
-                        value = level === 0 ? 'Grand Total' : '';
+                        value = '';
                     } else {
-                        value = 'Total';
+                        value = '';
                     }
                 }
 
-                headerGrid[i][level] = { value, span, isTotal };
+                const path = currentPath.slice(0, level + 1);
+                const isExpandable = level < (depth-1) && !isTotal;
+
+                headerGrid[i][level] = { value, span, isTotal, path, isExpandable };
                 for (let k = 1; k < span; k++) {
                     headerGrid[i + k][level] = { value: null, span: 0, isTotal: false };
                 }
@@ -189,6 +237,7 @@
         position: sticky;
         left: 0;
         z-index: 1;
+        background-color: #f2f2f2; /* To make sure it covers what's scrolling under it */
     }
     td {
         text-align: right;
@@ -200,6 +249,15 @@
     .total {
         font-weight: bold;
         background-color: #e8e8e8;
+    }
+    tbody th button {
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-family: monospace;
+        margin-right: 4px;
+        padding: 0;
+        width: 1em;
     }
 </style>
 
@@ -221,17 +279,23 @@
             {/each}
         </thead>
         <tbody>
-            {#each table.body as dataRow, i}
+            {#each visibleBody as dataRow, i}
+                {@const originalIndex = visibleRowIndices[i]}
                 <tr>
-                    {#each table.rowHeaders[i] as cell}
+                    {#each visibleRowHeaders[i] as cell}
                         {#if cell.span > 0}
                             <th rowspan={cell.span} class:total={cell.isTotal}>
+                                {#if cell.isExpandable}
+                                    <button on:click={() => toggleRow(cell.path)}>
+                                        {collapsedRowPaths.has(JSON.stringify(cell.path)) ? '+' : '-'}
+                                    </button>
+                                {/if}
                                 {cell.value}
                             </th>
                         {/if}
                     {/each}
                     {#each dataRow as value, j}
-                        <td class:total={table.sortedRowPaths[i].includes(TOTAL_KEY) || table.sortedColPaths[j].includes(TOTAL_KEY)}>
+                        <td class:total={table.sortedRowPaths[originalIndex].includes(TOTAL_KEY) || table.sortedColPaths[j].includes(TOTAL_KEY)}>
                             {#if value !== undefined && value !== null}
                                 {value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             {/if}
